@@ -1,0 +1,50 @@
+pragma solidity ^0.8.0;
+
+contract Project {
+    struct Option {
+        address buyer;
+        address seller;
+        uint256 premium;
+        uint256 strikePrice;
+        uint256 expiry;
+        bool exercised;
+    }
+
+    uint256 public optionCounter;
+    mapping(uint256 => Option) public options;
+
+    event OptionCreated(uint256 optionId, address indexed buyer, address indexed seller);
+    event OptionExercised(uint256 optionId);
+
+    function createOption(address _seller, uint256 _premium, uint256 _strikePrice, uint256 _expiry) external returns (uint256) {
+        require(_expiry > block.timestamp, "Invalid expiry");
+
+        optionCounter++;
+        options[optionCounter] = Option({
+            buyer: msg.sender,
+            seller: _seller,
+            premium: _premium,
+            strikePrice: _strikePrice,
+            expiry: _expiry,
+            exercised: false
+        });
+
+        emit OptionCreated(optionCounter, msg.sender, _seller);
+        return optionCounter;
+    }
+
+    function exerciseOption(uint256 _optionId) external {
+        Option storage opt = options[_optionId];
+        require(msg.sender == opt.buyer, "Only buyer can exercise");
+        require(block.timestamp <= opt.expiry, "Option expired");
+        require(!opt.exercised, "Option already exercised");
+
+        opt.exercised = true;
+
+        emit OptionExercised(_optionId);
+    }
+
+    function getOptionDetails(uint256 _optionId) external view returns (Option memory) {
+        return options[_optionId];
+    }
+}
